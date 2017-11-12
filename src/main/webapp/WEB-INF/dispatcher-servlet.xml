@@ -1,0 +1,82 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+       xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:websocket="http://www.springframework.org/schema/websocket"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/data/jpa http://www.springframework.org/schema/data/jpa/spring-jpa.xsd
+        http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc.xsd
+        http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+        http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
+        http://www.springframework.org/schema/websocket http://www.springframework.org/schema/websocket/spring-websocket.xsd">
+ 
+    <context:property-placeholder location="classpath:application.properties"/>
+        
+	<context:component-scan base-package="com.monitor.controller" />
+	
+	<mvc:annotation-driven/>
+	<mvc:resources mapping="/javascript/**" location="/javascript/"/>
+	<mvc:resources mapping="/css/**" location="/css/"/>
+ 
+ 	<bean id="dataDefinitionService" class="com.dao.services.DataDefinitionServiceImpl" />
+	<bean id="dataAccessService" class="com.dao.services.DataAccessServiceImpl" />
+	<bean id="actionMonitorServices" class="com.monitor.services.ActionMonitorServicesImpl" />
+	<bean id="webSocketHandler" class="com.monitor.services.WebSocketHandler" />
+	
+	<jpa:repositories base-package="com.dao.services" />
+	
+	<websocket:message-broker
+        application-destination-prefix="/app"
+        user-destination-prefix="/user">
+        <websocket:stomp-endpoint path="/websocket">
+            <websocket:sockjs/>
+        </websocket:stomp-endpoint>
+        <websocket:simple-broker prefix="/topic, /message, /broadcast" />
+    </websocket:message-broker>
+	
+	<bean id="entityManagerFactory" class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="packagesToScan" value="com.dao.entities" />
+        <property name="jpaVendorAdapter">
+            <bean class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter" />
+        </property>
+        <property name="jpaProperties">
+            <props>
+                <prop key="hibernate.hbm2ddl.auto">create-drop</prop>
+                <prop key="hibernate.dialect">org.hibernate.dialect.H2Dialect</prop>
+                <prop key="hibernate.show_sql">true</prop>
+                <prop key="hibernate.format_sql">true</prop>
+            </props>
+        </property>
+    </bean>
+ 
+    <bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+        <property name="entityManagerFactory" ref="entityManagerFactory"/>
+        <property name="dataSource" ref="dataSource" />
+    </bean>
+ 
+<!--     <jdbc:embedded-database id="dataSource" type="H2"/> -->
+
+ 	<bean id="dataSource" class="org.h2.jdbcx.JdbcDataSource">
+        <property name="URL" value="${h2.datasource.url}"/>
+        <property name="user" value="${h2.datasource.username}"/>
+        <property name="password" value="${h2.datasource.password}"/>
+    </bean>
+    
+    <tx:annotation-driven/>
+	
+	<bean
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="prefix">
+			<value>/WEB-INF/views/</value>
+		</property>
+		<property name="suffix">
+			<value>.jsp</value>
+		</property>
+	</bean>
+</beans>
